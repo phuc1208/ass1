@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const InvoiceFilter_1 = require("./InvoiceFilter");
 const file = fs_1.default.readFileSync('src/email.txt').toString();
-console.log(file);
+//=================================cách 1: dùng regex===========================//
 // trích xuất 1 giá trị từ chuỗi
 /**
  *
@@ -55,5 +55,42 @@ function extract(data) {
     const taxCode = extractValueOf(data, InvoiceFilter_1.InvoiceFilter.TAX_CODE);
     return { invoiceId, symbol, code, searchCode, link, taxCode };
 }
-const result = extract(file);
-console.log(result);
+// const result = extract(file);
+// console.log("way 1");
+// console.log(result);
+//=================================cách 2: đệ quy===========================//
+function handleExtract(data, filter, index = 1) {
+    const store = data.indexOf(filter, index);
+    if (store === -1) {
+        return [];
+    }
+    const _escape = data.indexOf('\n', 1 + store);
+    return [data.slice(store, _escape), ...handleExtract(data, filter, index + store)];
+}
+function extract2(data) {
+    const invoiceId = handleExtract(data, "Số hóa đơn")
+        .join("")
+        .replace("Số hóa đơn: ", "")
+        .replace("\r", "");
+    const symbol = handleExtract(data, "Ký hiệu")
+        .join("")
+        .replace("Ký hiệu: ", "")
+        .replace("\r", "");
+    const code = handleExtract(data, "Mẫu số")
+        .join("")
+        .replace("Mẫu số: ", "")
+        .replace("\r", "");
+    const searchCode = handleExtract(data, "Mã tra cứu")
+        .join("")
+        .replace("Mã tra cứu: ", "")
+        .replace("\r", "");
+    const link = handleExtract(data, "http")
+        .map(link => (link.slice(0, -3)));
+    const taxCode = handleExtract(data, "Mã số thuế")
+        .join("")
+        .split(" ")[3];
+    return { invoiceId, symbol, code, searchCode, link, taxCode };
+}
+const result2 = extract2(file);
+console.log("way 2");
+console.log(result2);
